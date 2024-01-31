@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input, select, button {
+            width: calc(100% - 18px);
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #result {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            overflow-x: auto;
+            max-height: 500px; /* Set a max height for vertical scrolling */
+        }
+
+        #summary {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .delete-button {
+            background-color: #ff6961;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .delete-button:hover {
+            background-color: #ff4941;
+        }
+
+        .error-message {
+            color: #ff0000;
+            margin-top: 10px;
+        }
+
+        /* Responsive styles */
+        @media only screen and (max-width: 600px) {
+            input, select, button {
+                width: 100%;
+            }
+
+            table {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Total Budget Calculator</h2>
+
+    <form id="budgetForm">
+        <label for="date">Date:</label>
+        <input type="date" id="date" required>
+
+        <button type="button" onclick="promptAddBudget()">Add Budget</button>
+        <button type="button" onclick="promptAddLoan()">Add Loan</button>
+    </form>
+
+    <div id="summary">
+        <h3>Summary</h3>
+        <div id="totalRemainingBalance">Total Remaining Balance: PHP 0.00</div>
+    </div>
+
+    <div id="result">
+        <h3>Results</h3>
+        <div id="errorContainer" class="error-message"></div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Loan Amount (PHP)</th>
+                    <th>Add Budget (PHP)</th>
+                    <th>Remaining Balance (PHP)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="resultTableBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        var currentTotalBudget = 0;
+        var results = getStoredResults();
+
+        function promptAddBudget() {
+            var addBudget = parseFloat(prompt("Enter additional budget:"));
+
+            // Check if input is a valid number
+            if (isNaN(addBudget) || addBudget <= 0) {
+                alert("Please enter a valid additional budget.");
+                return;
+            }
+
+            // Use the current total budget for the calculation
+            // If it's the first entry, set the initial total budget
+            if (currentTotalBudget === 0) {
+                currentTotalBudget = addBudget;
+            } else {
+                currentTotalBudget += addBudget;
+            }
+
+            // Save the result
+            results.push({
+                date: new Date().toLocaleDateString(),
+                loanAmount: 0,
+                addBudget: addBudget,
+                remainingBalance: currentTotalBudget
+            });
+
+            // Save results to local storage
+            saveResults();
+
+            // Display the results
+            displayResults();
+        }
+
+        function promptAddLoan() {
+            var loanAmount = parseFloat(prompt("Enter loan amount:"));
+
+            // Check if input is a valid number
+            if (isNaN(loanAmount) || loanAmount <= 0) {
+                alert("Please enter a valid loan amount.");
+                return;
+            }
+
+            // Check if there is enough budget
+            if (loanAmount > currentTotalBudget) {
+                displayError("Insufficient funds. Cannot proceed with the loan.");
+                return;
+            }
+
+            // Use the current total budget for the calculation
+            currentTotalBudget -= loanAmount;
+
+            // Save the result
+            results.push({
+                date: new Date().toLocaleDateString(),
+                loanAmount: loanAmount,
+                addBudget: 0,
+                remainingBalance: currentTotalBudget
+            });
+
+            // Save results to local storage
+            saveResults();
+
+            // Display the results
+            displayResults();
+        }
+
+        function deleteRecord(index) {
+            // Remove the result at the specified index
+            results.splice(index, 1);
+
+            // Save updated results to local storage
+            saveResults();
+
+            // Display the updated results
+            displayResults();
+        }
+
+        function displayResults() {
+            var resultTableBody = document.getElementById("resultTableBody");
+            resultTableBody.innerHTML = "";
+
+            var totalRemainingBalance = 0;
+
+            for (var i = 0; i < results.length; i++) {
+                var result = results[i];
+                var newRow = resultTableBody.insertRow();
+                var cellDate = newRow.insertCell(0);
+                var cellLoanAmount = newRow.insertCell(1);
+                var cellAddBudget = newRow.insertCell(2);
+                var cellRemainingBalance = newRow.insertCell(3);
+                var cellAction = newRow.insertCell(4);
+
+                cellDate.innerHTML = result.date;
+                cellLoanAmount.innerHTML = formatCurrency(result.loanAmount);
+                cellAddBudget.innerHTML = formatCurrency(result.addBudget);
+                cellRemainingBalance.innerHTML = formatCurrency(result.remainingBalance);
+
+                // Add delete button with an onclick event
+                var deleteButton = document.createElement("button");
+                deleteButton.innerHTML = "Delete";
+                deleteButton.className = "delete-button";
+                deleteButton.onclick = (function (index) {
+                    return function () {
+                        deleteRecord(index);
+                    };
+                })(i);
+
+                cellAction.appendChild(deleteButton);
+
+                // Update total remaining balance
+                totalRemainingBalance = result.remainingBalance;
+            }
+
+            // Update total remaining balance in the summary
+            document.getElementById("totalRemainingBalance").innerHTML =
+                "Total Remaining Balance: " + formatCurrency(totalRemainingBalance);
+        }
+
+        function saveResults() {
+            localStorage.setItem('budgetResults', JSON.stringify(results));
+        }
+
+        function getStoredResults() {
+            var storedResults = localStorage.getItem('budgetResults');
+            return storedResults ? JSON.parse(storedResults) : [];
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value);
+        }
+
+        function displayError(message) {
+            var errorContainer = document.getElementById("errorContainer");
+            errorContainer.innerHTML = message;
+        }
+
+        // Display stored results on page load
+        displayResults();
+    </script>
+
+</body>
+</html>
