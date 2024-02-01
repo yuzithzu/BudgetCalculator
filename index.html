@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,7 +27,9 @@
             margin-bottom: 5px;
         }
 
-        input, select, button {
+        input,
+        select,
+        button {
             width: calc(100% - 18px);
             padding: 8px;
             margin-bottom: 10px;
@@ -76,7 +79,8 @@
             margin-top: 10px;
         }
 
-        th, td {
+        th,
+        td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
@@ -106,7 +110,9 @@
 
         /* Responsive styles */
         @media only screen and (max-width: 600px) {
-            input, select, button {
+            input,
+            select,
+            button {
                 width: 100%;
             }
 
@@ -114,7 +120,8 @@
                 overflow-x: auto;
             }
 
-            h2, #summary {
+            h2,
+            #summary {
                 position: static;
                 width: 100%;
             }
@@ -125,6 +132,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <h2>Total Budget Calculator</h2>
@@ -133,8 +141,8 @@
         <label for="date">Date:</label>
         <input type="date" id="date" required>
 
-        <button type="button" onclick="promptAddBudget()">Add Budget</button>
-        <button type="button" onclick="promptAddLoan()">Add Loan</button>
+        <button type="button" onclick="addBudget()">Add Budget</button>
+        <button type="button" onclick="addLoan()">Add Loan</button>
     </form>
 
     <div id="summary">
@@ -163,16 +171,14 @@
         var currentTotalBudget = 0;
         var results = getStoredResults();
 
-        function promptAddBudget() {
+        function addBudget() {
             var addBudget = parseFloat(prompt("Enter additional budget:"));
 
-            // Check if input is a valid number
             if (isNaN(addBudget) || addBudget <= 0) {
                 alert("Please enter a valid additional budget.");
                 return;
             }
 
-            // Save the result
             var result = {
                 date: new Date().toLocaleDateString(),
                 loanAmount: 0,
@@ -184,29 +190,24 @@
 
             results.push(result);
 
-            // Save results to local storage
             saveResults();
 
-            // Display the results
             displayResults();
         }
 
-        function promptAddLoan() {
+        function addLoan() {
             var loanAmount = parseFloat(prompt("Enter loan amount:"));
 
-            // Check if input is a valid number
             if (isNaN(loanAmount) || loanAmount <= 0) {
                 alert("Please enter a valid loan amount.");
                 return;
             }
 
-            // Check if there is enough budget
             if (loanAmount > currentTotalBudget) {
                 displayError("Insufficient funds. Cannot proceed with the loan.");
                 return;
             }
 
-            // Save the result
             var result = {
                 date: new Date().toLocaleDateString(),
                 loanAmount: loanAmount,
@@ -218,21 +219,16 @@
 
             results.push(result);
 
-            // Save results to local storage
             saveResults();
 
-            // Display the results
             displayResults();
         }
 
         function deleteRecord(index) {
-            // Remove the result at the specified index
             results.splice(index, 1);
 
-            // Save updated results to local storage
             saveResults();
 
-            // Display the updated results
             displayResults();
         }
 
@@ -240,7 +236,7 @@
             var resultTableBody = document.getElementById("resultTableBody");
             resultTableBody.innerHTML = "";
 
-            var totalRemainingBalance = 0;
+            var totalRemainingBalance = results.length > 0 ? results[results.length - 1].remainingBalance : 0;
 
             for (var i = 0; i < results.length; i++) {
                 var result = results[i];
@@ -256,7 +252,6 @@
                 cellAddBudget.innerHTML = formatCurrency(result.addBudget);
                 cellRemainingBalance.innerHTML = formatCurrency(result.remainingBalance);
 
-                // Add delete button with an onclick event
                 var deleteButton = document.createElement("button");
                 deleteButton.innerHTML = "Delete";
                 deleteButton.className = "delete-button";
@@ -268,11 +263,9 @@
 
                 cellAction.appendChild(deleteButton);
 
-                // Update total remaining balance
                 totalRemainingBalance = result.remainingBalance;
             }
 
-            // Update total remaining balance in the summary
             document.getElementById("totalRemainingBalance").innerHTML =
                 "Total Remaining Balance: " + formatCurrency(totalRemainingBalance);
         }
@@ -287,7 +280,10 @@
         }
 
         function formatCurrency(value) {
-            return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value);
+            return new Intl.NumberFormat('en-PH', {
+                style: 'currency',
+                currency: 'PHP'
+            }).format(value);
         }
 
         function displayError(message) {
@@ -295,9 +291,9 @@
             errorContainer.innerHTML = message;
         }
 
-        // Display stored results on page load
         displayResults();
     </script>
 
 </body>
+
 </html>
