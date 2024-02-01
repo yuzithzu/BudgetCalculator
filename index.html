@@ -172,21 +172,17 @@
                 return;
             }
 
-            // Use the current total budget for the calculation
-            // If it's the first entry, set the initial total budget
-            if (currentTotalBudget === 0) {
-                currentTotalBudget = addBudget;
-            } else {
-                currentTotalBudget += addBudget;
-            }
-
             // Save the result
-            results.push({
+            var result = {
                 date: new Date().toLocaleDateString(),
                 loanAmount: 0,
                 addBudget: addBudget,
-                remainingBalance: currentTotalBudget
-            });
+                remainingBalance: currentTotalBudget + addBudget
+            };
+
+            currentTotalBudget += addBudget;
+
+            results.push(result);
 
             // Save results to local storage
             saveResults();
@@ -210,16 +206,17 @@
                 return;
             }
 
-            // Use the current total budget for the calculation
-            currentTotalBudget -= loanAmount;
-
             // Save the result
-            results.push({
+            var result = {
                 date: new Date().toLocaleDateString(),
                 loanAmount: loanAmount,
                 addBudget: 0,
-                remainingBalance: currentTotalBudget
-            });
+                remainingBalance: currentTotalBudget - loanAmount
+            };
+
+            currentTotalBudget -= loanAmount;
+
+            results.push(result);
 
             // Save results to local storage
             saveResults();
