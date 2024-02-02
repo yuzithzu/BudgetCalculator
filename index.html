@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,9 +26,7 @@
             margin-bottom: 5px;
         }
 
-        input,
-        select,
-        button {
+        input, select, button {
             width: calc(100% - 18px);
             padding: 8px;
             margin-bottom: 10px;
@@ -79,8 +76,7 @@
             margin-top: 10px;
         }
 
-        th,
-        td {
+        th, td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
@@ -110,9 +106,7 @@
 
         /* Responsive styles */
         @media only screen and (max-width: 600px) {
-            input,
-            select,
-            button {
+            input, select, button {
                 width: 100%;
             }
 
@@ -120,8 +114,7 @@
                 overflow-x: auto;
             }
 
-            h2,
-            #summary {
+            h2, #summary {
                 position: static;
                 width: 100%;
             }
@@ -130,25 +123,36 @@
                 padding-top: 0;
             }
         }
+
+        /* Additional styles for the show/hide button */
+        #toggleAllButton {
+            background-color: #008CBA;
+            color: white;
+        }
+
+        #toggleAllButton:hover {
+            background-color: #00698C;
+        }
     </style>
 </head>
-
 <body>
 
     <h2>Total Budget Calculator</h2>
 
     <form id="budgetForm">
         <label for="date">Date:</label>
-        <input type="date" id="date" required>
+        <input type="date" id="date" required onchange="handleDateChange()">
 
-        <button type="button" onclick="addBudget()">Add Budget</button>
-        <button type="button" onclick="addLoan()">Add Loan</button>
+        <button type="button" onclick="promptAddBudget()">Add Budget</button>
+        <button type="button" onclick="promptAddLoan()">Add Loan</button>
     </form>
 
     <div id="summary">
         <h3>Summary</h3>
         <div id="totalRemainingBalance">Total Remaining Balance: PHP 0.00</div>
     </div>
+
+    <button type="button" id="toggleAllButton" onclick="toggleAllRecords()">Show All</button>
 
     <div id="result">
         <h3>Results</h3>
@@ -168,10 +172,10 @@
     </div>
 
     <script>
-        var currentTotalBudget = 0;
         var results = getStoredResults();
+        var showAll = true; // Flag to track whether to show all records
 
-        function addBudget() {
+        function promptAddBudget() {
             var addBudget = parseFloat(prompt("Enter additional budget:"));
 
             if (isNaN(addBudget) || addBudget <= 0) {
@@ -179,23 +183,12 @@
                 return;
             }
 
-            var result = {
-                date: new Date().toLocaleDateString(),
-                loanAmount: 0,
-                addBudget: addBudget,
-                remainingBalance: currentTotalBudget + addBudget
-            };
-
-            currentTotalBudget += addBudget;
-
-            results.push(result);
-
-            saveResults();
+            updateResults(addBudget, 0);
 
             displayResults();
         }
 
-        function addLoan() {
+        function promptAddLoan() {
             var loanAmount = parseFloat(prompt("Enter loan amount:"));
 
             if (isNaN(loanAmount) || loanAmount <= 0) {
@@ -203,23 +196,12 @@
                 return;
             }
 
-            if (loanAmount > currentTotalBudget) {
+            if (loanAmount > getCurrentTotalBudget()) {
                 displayError("Insufficient funds. Cannot proceed with the loan.");
                 return;
             }
 
-            var result = {
-                date: new Date().toLocaleDateString(),
-                loanAmount: loanAmount,
-                addBudget: 0,
-                remainingBalance: currentTotalBudget - loanAmount
-            };
-
-            currentTotalBudget -= loanAmount;
-
-            results.push(result);
-
-            saveResults();
+            updateResults(0, loanAmount);
 
             displayResults();
         }
@@ -228,7 +210,6 @@
             results.splice(index, 1);
 
             saveResults();
-
             displayResults();
         }
 
@@ -236,38 +217,78 @@
             var resultTableBody = document.getElementById("resultTableBody");
             resultTableBody.innerHTML = "";
 
-            var totalRemainingBalance = results.length > 0 ? results[results.length - 1].remainingBalance : 0;
+            var totalRemainingBalance = 0;
 
             for (var i = 0; i < results.length; i++) {
                 var result = results[i];
-                var newRow = resultTableBody.insertRow();
-                var cellDate = newRow.insertCell(0);
-                var cellLoanAmount = newRow.insertCell(1);
-                var cellAddBudget = newRow.insertCell(2);
-                var cellRemainingBalance = newRow.insertCell(3);
-                var cellAction = newRow.insertCell(4);
 
-                cellDate.innerHTML = result.date;
-                cellLoanAmount.innerHTML = formatCurrency(result.loanAmount);
-                cellAddBudget.innerHTML = formatCurrency(result.addBudget);
-                cellRemainingBalance.innerHTML = formatCurrency(result.remainingBalance);
+                // Check if the record should be displayed
+                if (showAll || i === results.length - 1) {
+                    var newRow = resultTableBody.insertRow();
+                    var cellDate = newRow.insertCell(0);
+                    var cellLoanAmount = newRow.insertCell(1);
+                    var cellAddBudget = newRow.insertCell(2);
+                    var cellRemainingBalance = newRow.insertCell(3);
+                    var cellAction = newRow.insertCell(4);
 
-                var deleteButton = document.createElement("button");
-                deleteButton.innerHTML = "Delete";
-                deleteButton.className = "delete-button";
-                deleteButton.onclick = (function (index) {
-                    return function () {
-                        deleteRecord(index);
-                    };
-                })(i);
+                    cellDate.innerHTML = result.date;
+                    cellLoanAmount.innerHTML = formatCurrency(result.loanAmount);
+                    cellAddBudget.innerHTML = formatCurrency(result.addBudget);
+                    cellRemainingBalance.innerHTML = formatCurrency(result.remainingBalance);
 
-                cellAction.appendChild(deleteButton);
+                    var deleteButton = document.createElement("button");
+                    deleteButton.innerHTML = "Delete";
+                    deleteButton.className = "delete-button";
+                    deleteButton.onclick = (function (index) {
+                        return function () {
+                            deleteRecord(index);
+                        };
+                    })(i);
 
-                totalRemainingBalance = result.remainingBalance;
+                    cellAction.appendChild(deleteButton);
+
+                    totalRemainingBalance = result.remainingBalance;
+                }
             }
 
             document.getElementById("totalRemainingBalance").innerHTML =
                 "Total Remaining Balance: " + formatCurrency(totalRemainingBalance);
+        }
+
+        function updateResults(addBudget, loanAmount) {
+            var currentDate = new Date(document.getElementById("date").value).toLocaleDateString();
+            var existingResult = results.find(result => result.date === currentDate);
+
+            if (existingResult) {
+                existingResult.addBudget += addBudget;
+                existingResult.loanAmount += loanAmount;
+                existingResult.remainingBalance += addBudget - loanAmount;
+            } else {
+                var result = {
+                    date: currentDate,
+                    loanAmount: loanAmount,
+                    addBudget: addBudget,
+                    remainingBalance: getCurrentTotalBudget() + addBudget - loanAmount
+                };
+
+                results.push(result);
+            }
+
+            saveResults();
+            updateTotalRemainingBalance();
+        }
+
+        function updateTotalRemainingBalance() {
+            var totalRemainingBalance = results.reduce(function (sum, result) {
+                return sum + result.remainingBalance;
+            }, 0);
+
+            document.getElementById("totalRemainingBalance").innerHTML =
+                "Total Remaining Balance: " + formatCurrency(totalRemainingBalance);
+        }
+
+        function getCurrentTotalBudget() {
+            return results.length > 0 ? results[results.length - 1].remainingBalance : 0;
         }
 
         function saveResults() {
@@ -280,10 +301,7 @@
         }
 
         function formatCurrency(value) {
-            return new Intl.NumberFormat('en-PH', {
-                style: 'currency',
-                currency: 'PHP'
-            }).format(value);
+            return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(value);
         }
 
         function displayError(message) {
@@ -291,9 +309,20 @@
             errorContainer.innerHTML = message;
         }
 
+        function toggleAllRecords() {
+            showAll = !showAll;
+            document.getElementById("toggleAllButton").innerHTML = showAll ? "Hide All" : "Show All";
+            displayResults();
+        }
+
+        function handleDateChange() {
+            // Handle auto-recompute on date change
+            displayResults();
+        }
+
+        // Display stored results on page load
         displayResults();
     </script>
 
 </body>
-
 </html>
